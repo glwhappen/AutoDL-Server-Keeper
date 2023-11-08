@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 from datetime import datetime
@@ -117,6 +118,7 @@ def power_on_last():
     启动最后一个关机的实例
     :return:
     """
+    logger.info('power_on_last')
     instances = instance_list()
     for data in instances:
         data['stop_time'] = datetime.fromisoformat(data['stopped_at']['Time']).timestamp()
@@ -133,6 +135,11 @@ def power_on_last():
         else:
             logger.info(f'{uuid} power_on failed')
 
+# 创建解析器
+parser = argparse.ArgumentParser(description="Control the AutoDL system.")
+# 添加参数
+parser.add_argument('--power_on_last', action='store_true', help='Activate the power_on_last function')
+parser.add_argument('--shutdown_all', action='store_true', help='Activate the shutdown_all function')
 
 
 
@@ -147,4 +154,9 @@ if __name__ == '__main__':
     #     print(data['uuid'], data['status'], data['gpu_idle_num'], data['stopped_at']['Time'], data['stop_time'])
     # shutdown_all(instances)
     # power_on_last()
-    shutdown_all()
+    # 解析命令行参数
+    args = parser.parse_args()
+    if args.power_on_last:
+        power_on_last()
+    elif args.shutdown_all:
+        shutdown_all()

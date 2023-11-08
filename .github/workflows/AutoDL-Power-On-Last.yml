@@ -27,4 +27,4 @@ jobs:
       env:
         AUTHORIZATION: ${{ secrets.AUTHORIZATION }}
       run: |
-        python -m autodl power_on_last
+        python autodl.py --power_on_last

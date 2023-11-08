@@ -27,4 +27,4 @@ jobs:
       env:
         AUTHORIZATION: ${{ secrets.AUTHORIZATION }}
       run: |
-        python -m autodl shutdown_all
+        python autodl.py --shutdown_all

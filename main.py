@@ -15,8 +15,8 @@ authorization_token = os.getenv('AUTHORIZATION')
 
 # 设置日志格式
 logging.basicConfig(
-    filename='app.log',
-    filemode='a',  # 追加模式
+    # filename='app.log',
+    # filemode='a',  # 追加模式
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
@@ -86,15 +86,17 @@ def change():
 
 if __name__ == '__main__':
     if os.getenv('RUN_CHANGE_FUNCTION'):
+        logger.info("直接运行日志")
         change()
     else:
+        logger.info("开启定时器，并且不停止")
         scheduler.start()
         print('Scheduler started, press Ctrl+C to exit.')
 
-    try:
-        # 保持主线程活跃
-        while True:
-            time.sleep(2)
-    except (KeyboardInterrupt, SystemExit):
-        # 如果您运行的是长期进程，即使在守护模式下也应该执行此关闭操作
-        scheduler.shutdown()  # 安全关闭调度器
+        try:
+            # 保持主线程活跃
+            while True:
+                time.sleep(2)
+        except (KeyboardInterrupt, SystemExit):
+            # 如果您运行的是长期进程，即使在守护模式下也应该执行此关闭操作
+            scheduler.shutdown()  # 安全关闭调度器

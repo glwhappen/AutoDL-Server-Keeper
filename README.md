@@ -65,6 +65,8 @@ python main.py
 
 在创建了这个工作流文件之后，你需要在 GitHub 仓库的 Settings -> Secrets 部分添加名为 AUTHORIZATION 的 secret。这个 secret 应该包含你的授权令牌，它会在工作流运行时被设置为环境变量。
 
+![](https://raw.githubusercontent.com/glwhappen/images/main/img/202311081933806.png)
+
 ## 安全和隐私
 
 - 确保你的 `authorization` 令牌安全，不要公开在互联网上。

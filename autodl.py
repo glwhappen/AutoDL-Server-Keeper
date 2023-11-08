@@ -147,4 +147,4 @@ if __name__ == '__main__':
     #     print(data['uuid'], data['status'], data['gpu_idle_num'], data['stopped_at']['Time'], data['stop_time'])
     # shutdown_all(instances)
     # power_on_last()
-    shutdown_all(instance_list())
+    shutdown_all()

@@ -1,4 +1,4 @@
-name: AutoDL Keep Alive
+name: AutoDL Power On Last
 
 on:
   schedule:

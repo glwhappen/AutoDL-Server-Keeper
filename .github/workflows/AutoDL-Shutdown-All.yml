@@ -2,8 +2,9 @@ name: AutoDL Shutdown All
 
 on:
   schedule:
-    # Runs at 20:03 UTC, which is 4:03 AM Beijing Time
-    - cron:  '3 20 * * *'
+    # '3 20 * * *' 北京时间每天凌晨 4 点 3 分 执行
+    # '3 * * * *' 北京时间每小时的第 3 分执行
+    - cron:  '3 * * * *'
   workflow_dispatch:
     # Allows manual triggering of the workflow
 

@@ -1,12 +1,15 @@
 import argparse
 import json
 import logging
-from datetime import datetime
+import time
+from datetime import datetime, timezone, timedelta
 
 import requests
 
 import os
 from dotenv import load_dotenv
+
+from ssh_tools import run_ssh
 
 load_dotenv()  # 这一行加载.env文件中的变量
 
@@ -46,17 +49,12 @@ def manage_power(action, instance_uuid, payload=None):
     # Assuming that 'headers' should be passed and are defined outside this function.
     global headers
 
-    # The payload is only necessary for the 'power_on' action.
-    if action == 'power_on' and payload is not None:
-        data = {
-            "instance_uuid": instance_uuid,
-            "payload": payload
-        }
-    else:
-        data = {
-            "instance_uuid": instance_uuid
-        }
+    data = {
+        "instance_uuid": instance_uuid
+    }
 
+    if payload is not None:
+        data['payload'] = payload
     # Convert the dictionary to a JSON string.
     data_json = json.dumps(data)
 
@@ -96,6 +94,12 @@ def instance_list():
     #         else:
     #             logger.info(f'{uuid} power_off failed')
 
+def get_instance(uuid):
+    instances = instance_list()
+    for instance in instances:
+        if instance['uuid'] == uuid:
+            return instance
+    return None
 
 def shutdown_all():
     instances = instance_list()
@@ -141,22 +145,85 @@ parser = argparse.ArgumentParser(description="Control the AutoDL system.")
 parser.add_argument('--power_on_last', action='store_true', help='Activate the power_on_last function')
 parser.add_argument('--shutdown_all', action='store_true', help='Activate the shutdown_all function')
 
+def change_timestamp(time_str):
+    if time_str == '0001-01-01T00:00:00Z':
+        return 0
+    # 将时间字符串解析为datetime对象
+    dt = datetime.fromisoformat(time_str)
 
+    # 如果时间字符串中包含时区信息，则可以将其保留在datetime对象中
+    # 如果不包含时区信息，可以手动添加所需的时区信息
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone(timedelta(hours=8)))  # 时区信息表示+08:00
+    return dt.timestamp()
 
-if __name__ == '__main__':
-    # instances = instance_list()
-    # for data in instances:
-    #     data['stop_time'] = datetime.fromisoformat(data['stopped_at']['Time']).timestamp()
-    #
-    # instances = sorted(instances, key=lambda x: x['stop_time'], reverse=True)
+def power_api():
+    """
+    开启服务器，并且运行程序
+    :return:
+    """
+    instances = instance_list()
+    for data in instances:
+        data['stop_time'] = change_timestamp(data['stopped_at']['Time'])
+
+    instances = sorted(instances, key=lambda x: x['stop_time'], reverse=True)
     # for data in instances:
     #     print(data)
     #     print(data['uuid'], data['status'], data['gpu_idle_num'], data['stopped_at']['Time'], data['stop_time'])
+
+    # 过滤data['gpu_idle_num'] == 0的设备
+    instances = filter(lambda x: x['gpu_idle_num'] > 0, instances)
+    instances = list(instances)
+    if len(instances) > 0:
+        data = instances[0]
+        status = data['status']
+        uuid = data['uuid']
+        gpu_idle_num = data['gpu_idle_num']
+        root_password = data['root_password']
+        proxy_host = data['proxy_host']
+        ssh_port = data['ssh_port']
+
+        if status == 'shutdown':
+            res = manage_power('power_on', uuid)
+            if res['code'] == 'Success':
+                logger.info(f'{uuid} power_on')
+                # 等待实例启动完成
+                while True:
+                    instance = get_instance(uuid)
+                    if instance['status'] == 'running':
+                        break
+                    time.sleep(1)
+                    print('wait for instance running')
+
+                # 获取实例信息
+                run_ssh(proxy_host, ssh_port, 'root', root_password, '/root/frp_me/frpc -c /root/frp_me/frpc.ini')
+                run_ssh(proxy_host, ssh_port, 'root', root_password, '/root/miniconda3/bin/python /root/autodl-fs/codegen/app.py')
+
+            else:
+                logger.info(f'{uuid} power_on failed')
+        else:
+            logger.info(f'{uuid} status is {status}, not shutdown, no need to power_on')
+
+if __name__ == '__main__':
+    instances = instance_list()
+    for data in instances:
+        data['stop_time'] = change_timestamp(data['stopped_at']['Time'])
+
+    instances = sorted(instances, key=lambda x: x['stop_time'], reverse=True)
+    # for data in instances:
+    #     print(data)
+    #     print(data['uuid'], data['status'], data['gpu_idle_num'], data['stopped_at']['Time'], data['stop_time'])
+
+    # 过滤data['gpu_idle_num'] == 0的设备
+    # for data in instances:
+    #     print(data)
+    #     print(data['uuid'], data['status'], data['gpu_idle_num'], data['stopped_at']['Time'], data['stop_time'], data['root_password'], data['proxy_host'], data['ssh_port'])
+
     # shutdown_all(instances)
     # power_on_last()
     # 解析命令行参数
-    args = parser.parse_args()
-    if args.power_on_last:
-        power_on_last()
-    elif args.shutdown_all:
-        shutdown_all()
+    # args = parser.parse_args()
+    # if args.power_on_last:
+    #     power_on_last()
+    # elif args.shutdown_all:
+    #     shutdown_all()

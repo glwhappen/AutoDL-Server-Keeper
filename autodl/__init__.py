@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 import time
@@ -73,6 +72,10 @@ def instance_list():
     payload = "{\"date_from\":\"\",\"date_to\":\"\",\"page_index\":1,\"page_size\":10,\"status\":[],\"charge_type\":[]}"
 
     response = requests.request("POST", url, headers=headers, data=payload)
+    if response.json()['code'] != 'Success':
+        logger.error(response.json())
+        return None
+
     data_list = response.json()['data']['list']
     return data_list
     # for data in data_list:
@@ -139,11 +142,6 @@ def power_on_last():
         else:
             logger.info(f'{uuid} power_on failed')
 
-# 创建解析器
-parser = argparse.ArgumentParser(description="Control the AutoDL system.")
-# 添加参数
-parser.add_argument('--power_on_last', action='store_true', help='Activate the power_on_last function')
-parser.add_argument('--shutdown_all', action='store_true', help='Activate the shutdown_all function')
 
 def change_timestamp(time_str):
     if time_str == '0001-01-01T00:00:00Z':
@@ -204,12 +202,14 @@ def power_api():
         else:
             logger.info(f'{uuid} status is {status}, not shutdown, no need to power_on')
 
-if __name__ == '__main__':
-    instances = instance_list()
-    for data in instances:
-        data['stop_time'] = change_timestamp(data['stopped_at']['Time'])
 
-    instances = sorted(instances, key=lambda x: x['stop_time'], reverse=True)
+if __name__ == '__main__':
+    pass
+    # instances = instance_list()
+    # for data in instances:
+    #     data['stop_time'] = change_timestamp(data['stopped_at']['Time'])
+    #
+    # instances = sorted(instances, key=lambda x: x['stop_time'], reverse=True)
     # for data in instances:
     #     print(data)
     #     print(data['uuid'], data['status'], data['gpu_idle_num'], data['stopped_at']['Time'], data['stop_time'])
@@ -222,8 +222,3 @@ if __name__ == '__main__':
     # shutdown_all(instances)
     # power_on_last()
     # 解析命令行参数
-    # args = parser.parse_args()
-    # if args.power_on_last:
-    #     power_on_last()
-    # elif args.shutdown_all:
-    #     shutdown_all()

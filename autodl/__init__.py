@@ -8,11 +8,12 @@ import requests
 import os
 from dotenv import load_dotenv
 
+from autodl.login import get_token
 from ssh_tools import run_ssh
 
 load_dotenv()  # 这一行加载.env文件中的变量
 
-authorization_token = os.getenv('AUTHORIZATION')
+authorization_token = get_token()
 # 设置日志格式
 logging.basicConfig(
     # filename='app.log',
